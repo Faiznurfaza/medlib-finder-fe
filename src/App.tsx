@@ -20,7 +20,7 @@ function App() {
   const fetchMedicine = async (params: Record<string, any>) => {
     const mergedParams = { ...getParamsObject(), ...params };
     const query = new URLSearchParams(mergedParams).toString();
-    const rawResponse = await fetch(`http://localhost:3000/api/medicines?${query}`, {
+    const rawResponse = await fetch(`https://medlib-details-be.vercel.app/api/medicines?${query}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
