@@ -4,6 +4,7 @@ import { useRef, useCallback, useState, useEffect } from "react"
 import { useSearchParams } from "react-router-dom"
 import { Tag, Tooltip, Image } from "antd"
 import { MedicineBoxOutlined } from "@ant-design/icons"
+import { ChevronDown, ChevronUp } from "lucide-react"
 
 function App() {
   const actionRef = useRef<ActionType>(undefined);
@@ -50,9 +51,9 @@ function App() {
       if (!rawResponse.ok) {
         throw new Error(result.message || 'Failed to fetch medicines');
       }
-      
+
       setTotalMedicines(result.pagination?.total || 0);
-      
+
       return {
         data: result.data || [],
         success: true,
@@ -143,7 +144,7 @@ function App() {
         const compositionArray = entity.composition.split(/\s*\+\s*/);
         const visibleCount = isMobile ? 2 : 5;
         const hiddenComposition = compositionArray.slice(visibleCount);
-        
+
         return (
           <Tooltip title={entity.composition}>
             <ul className="list-disc pl-3">
@@ -153,7 +154,7 @@ function App() {
                   <li key={idx} className="whitespace-normal text-xs md:text-sm">{item.trim()}</li>
                 ))}
               {compositionArray.length > visibleCount && (
-                <Tooltip 
+                <Tooltip
                   title={
                     <div>
                       <ul className="list-disc pl-4">
@@ -208,7 +209,7 @@ function App() {
                 </Tooltip>
               ))}
             {usesArray.length > visibleCount && (
-              <Tooltip 
+              <Tooltip
                 title={
                   <div>
                     <ul className="list-disc pl-4">
@@ -320,11 +321,11 @@ function App() {
             columns={columns}
             request={fetchMedicine}
             rowKey="id"
-            scroll={{ 
-              x: isMobile ? 400 : 'max-content', 
-              y: isMobile ? 400 : 'calc(100vh - 320px)' 
+            scroll={{
+              x: isMobile ? 400 : 'max-content',
+              y: isMobile ? 400 : 'calc(100vh - 320px)'
             }}
-            sticky={{ 
+            sticky={{
               offsetHeader: isMobile ? 0 : 64,
               offsetScroll: isMobile ? 0 : 24,
               getContainer: () => window,
@@ -355,11 +356,15 @@ function App() {
             }}
             search={{
               labelWidth: 'auto',
-              resetText: 'Reset',
-              searchText: 'Search',
-              collapsed: isMobile,
+              resetText: isMobile ? '🔄' : '🔄 Reset',
+              searchText: isMobile ? '🔍' : '🔍 Search',
               defaultCollapsed: isMobile,
-              collapseRender: isMobile ? (collapsed) => (collapsed ? 'Expand' : 'Collapse') : undefined,
+              collapseRender: (collapsed) => (
+                <div className="flex items-center gap-1">
+                  {collapsed ? <ChevronDown size={16} /> : <ChevronUp size={16} />}
+                  <span>{collapsed ? 'Expand' : 'Collapse'}</span>
+                </div>
+              ),
             }}
             toolBarRender={false}
             params={getParamsObject()}
