@@ -77,7 +77,7 @@ function App() {
       key: 'name',
       minWidth: 140,
       render: (_dom, entity) => (
-        <div className="flex items-center gap-2 min-w-[140px]">
+        <div className="flex items-center gap-2 min-w-[140px] w-full">
           <Image
             src={entity.imageUrl}
             width={28}
@@ -87,18 +87,19 @@ function App() {
             alt={entity.name}
             className="md:w-9 md:h-9 w-7 h-7"
           />
-          <div
-            style={{
-              maxWidth: 100,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-            className="font-bold text-gray-800 text-xs md:text-base"
-            title={entity.name}
-          >
-            {entity.name}
-          </div>
+          <Tooltip title={entity.name}>
+            <div
+              style={{
+                maxWidth: 100,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+              className="font-bold text-gray-800 text-xs md:text-base"
+            >
+              {entity.name}
+            </div>
+          </Tooltip>
           <div className="text-xs text-gray-500 hidden md:block">{entity.manufacturer}</div>
         </div>
       ),
