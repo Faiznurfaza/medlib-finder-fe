@@ -75,19 +75,19 @@ function App() {
       title: 'Medicine',
       dataIndex: 'name',
       key: 'name',
-      width: 260,
+      width: 220,
       render: (_dom, entity) => (
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <Image
             src={entity.imageUrl}
-            width={48}
-            height={48}
+            width={36}
+            height={36}
             style={{ objectFit: 'cover', borderRadius: 8, border: '1px solid #eee' }}
             preview={{ mask: <span>Click to enlarge</span> }}
             alt={entity.name}
           />
           <div>
-            <div className="font-bold text-gray-800">{entity.name}</div>
+            <div className="font-bold text-gray-800 text-sm md:text-base">{entity.name}</div>
             <div className="text-xs text-gray-500">{entity.manufacturer}</div>
           </div>
         </div>
@@ -172,49 +172,51 @@ function App() {
       header={{
         title: (
           <div className="flex items-center gap-2">
-            <MedicineBoxOutlined style={{ fontSize: 28, color: "#1890ff" }} />
-            <span className="font-bold text-xl">MedInfo Finder</span>
+            <MedicineBoxOutlined style={{ fontSize: 24, color: "#1890ff" }} />
+            <span className="font-bold text-lg md:text-xl">MedInfo Finder</span>
           </div>
         ),
         subTitle: (
-          <span className="text-gray-500">Search and compare medicines efficiently</span>
+          <span className="text-gray-500 text-xs md:text-base">Search and compare medicines efficiently</span>
         ),
       }}
-      className="bg-gray-50 min-h-screen p-4"
+      className="bg-gray-50 min-h-screen p-2 md:p-4"
     >
-      <div className="bg-white rounded-xl shadow-md p-4">
-        <ProTable
-          actionRef={actionRef}
-          columns={columns}
-          request={fetchMedicine}
-          rowKey="id"
-          scroll={{ x: 1100 }}
-          sticky
-          bordered
-          pagination={{
-            current: Number(searchParams.get('current')) || 1,
-            pageSize: Number(searchParams.get('pageSize')) || 10,
-            defaultPageSize: 10,
-            showSizeChanger: true,
-            showQuickJumper: true,
-          }}
-          options={{
-            reload: true,
-            setting: true,
-            density: true,
-          }}
-          search={{
-            labelWidth: 'auto',
-            resetText: 'Reset',
-            searchText: 'Search',
-          }}
-          toolBarRender={false}
-          params={getParamsObject()}
-          onChange={handleTableChange}
-          onSubmit={handleTableSubmit}
-          onReset={handleTableReset}
-          className="rounded-lg"
-        />
+      <div className="bg-white rounded-xl shadow-md p-2 md:p-4">
+        <div className="overflow-x-auto">
+          <ProTable
+            actionRef={actionRef}
+            columns={columns}
+            request={fetchMedicine}
+            rowKey="id"
+            scroll={{ x: 'max-content' }}
+            sticky
+            bordered
+            pagination={{
+              current: Number(searchParams.get('current')) || 1,
+              pageSize: Number(searchParams.get('pageSize')) || 10,
+              defaultPageSize: 10,
+              showSizeChanger: true,
+              showQuickJumper: true,
+            }}
+            options={{
+              reload: true,
+              setting: true,
+              density: true,
+            }}
+            search={{
+              labelWidth: 'auto',
+              resetText: 'Reset',
+              searchText: 'Search',
+            }}
+            toolBarRender={false}
+            params={getParamsObject()}
+            onChange={handleTableChange}
+            onSubmit={handleTableSubmit}
+            onReset={handleTableReset}
+            className="rounded-lg"
+          />
+        </div>
       </div>
     </PageContainer>
   )
