@@ -1,6 +1,6 @@
 import { ProTable, PageContainer } from "@ant-design/pro-components"
 import type { ActionType, ProColumns } from "@ant-design/pro-components"
-import { useRef, useCallback } from "react"
+import { useRef, useCallback, useState, useEffect } from "react"
 import { useSearchParams } from "react-router-dom"
 import { Tag, Tooltip, Image } from "antd"
 import { MedicineBoxOutlined } from "@ant-design/icons"
@@ -8,6 +8,22 @@ import { MedicineBoxOutlined } from "@ant-design/icons"
 function App() {
   const actionRef = useRef<ActionType>(undefined);
   const [searchParams, setSearchParams] = useSearchParams();
+  const [isMobile, setIsMobile] = useState(false);
+  const [totalMedicines, setTotalMedicines] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    checkIsMobile();
+    window.addEventListener('resize', checkIsMobile);
+
+    return () => {
+      window.removeEventListener('resize', checkIsMobile);
+    };
+  }, []);
 
   const getParamsObject = () => {
     const paramsObj: Record<string, string> = {};
@@ -18,25 +34,33 @@ function App() {
   };
 
   const fetchMedicine = async (params: Record<string, any>) => {
-    const mergedParams = { ...getParamsObject(), ...params };
-    const query = new URLSearchParams(mergedParams).toString();
-    const rawResponse = await fetch(`https://medlib-details-be.vercel.app/api/medicines?${query}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    setIsLoading(true);
+    try {
+      const mergedParams = { ...getParamsObject(), ...params };
+      const query = new URLSearchParams(mergedParams).toString();
+      const rawResponse = await fetch(`https://medlib-details-be.vercel.app/api/medicines?${query}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
 
-    const result = await rawResponse.json();
-    console.log('Fetched medicines:', result);
-    if (!rawResponse.ok) {
-      throw new Error(result.message || 'Failed to fetch medicines');
+      const result = await rawResponse.json();
+      console.log('Fetched medicines:', result);
+      if (!rawResponse.ok) {
+        throw new Error(result.message || 'Failed to fetch medicines');
+      }
+      
+      setTotalMedicines(result.pagination?.total || 0);
+      
+      return {
+        data: result.data || [],
+        success: true,
+        total: result.pagination?.total || 0,
+      };
+    } finally {
+      setIsLoading(false);
     }
-    return {
-      data: result.data || [],
-      success: true,
-      total: result.pagination?.total || 0,
-    };
   };
 
   const handleTableChange = useCallback((params: Record<string, any>, _sort: any, _filter: any) => {
@@ -72,35 +96,40 @@ function App() {
 
   const columns: ProColumns[] = [
     {
-      title: 'Medicine',
+      title: 'Medicine Name',
       dataIndex: 'name',
       key: 'name',
-      minWidth: 140,
+      width: isMobile ? 120 : 180,
+      fixed: isMobile ? 'left' : undefined,
       render: (_dom, entity) => (
-        <div className="flex items-center gap-2 min-w-[140px] w-full">
+        <div className="flex items-center gap-1 md:gap-2 min-w-[100px] w-full">
           <Image
             src={entity.imageUrl}
-            width={28}
-            height={28}
-            style={{ objectFit: 'cover', borderRadius: 8, border: '1px solid #eee' }}
+            width={isMobile ? 24 : 28}
+            height={isMobile ? 24 : 28}
+            style={{ objectFit: 'cover', borderRadius: 6, border: '1px solid #eee' }}
             preview={{ mask: <span>Click to enlarge</span> }}
             alt={entity.name}
-            className="md:w-9 md:h-9 w-7 h-7"
+            className="md:w-9 md:h-9 w-6 h-6"
           />
-          <Tooltip title={entity.name}>
-            <div
-              style={{
-                maxWidth: 100,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-              className="font-bold text-gray-800 text-xs md:text-base"
-            >
-              {entity.name}
-            </div>
-          </Tooltip>
-          <div className="text-xs text-gray-500 hidden md:block">{entity.manufacturer}</div>
+          <div className="flex flex-col gap-0">
+            <Tooltip title={entity.name}>
+              <div
+                style={{
+                  maxWidth: isMobile ? 70 : 100,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+                className="font-bold text-gray-800 text-xs md:text-base"
+              >
+                {entity.name}
+              </div>
+            </Tooltip>
+            {!isMobile && (
+              <div className="text-xs text-gray-500">{entity.manufacturer}</div>
+            )}
+          </div>
         </div>
       ),
     },
@@ -109,74 +138,149 @@ function App() {
       dataIndex: 'composition',
       key: 'composition',
       ellipsis: true,
-      minWidth: 140,
-      render: (_dom, entity) => (
-        <Tooltip title={entity.composition}>
-          <ul className="list-disc pl-4">
-            {entity.composition
-              .split(/\s*\+\s*/)
-              .map((item: string, idx: number) => (
-                <li key={idx} className="whitespace-normal text-xs md:text-sm">{item.trim()}</li>
-              ))}
-          </ul>
-        </Tooltip>
-      ),
+      width: isMobile ? 120 : 180,
+      render: (_dom, entity) => {
+        const compositionArray = entity.composition.split(/\s*\+\s*/);
+        const visibleCount = isMobile ? 2 : 5;
+        const hiddenComposition = compositionArray.slice(visibleCount);
+        
+        return (
+          <Tooltip title={entity.composition}>
+            <ul className="list-disc pl-3">
+              {compositionArray
+                .slice(0, visibleCount)
+                .map((item: string, idx: number) => (
+                  <li key={idx} className="whitespace-normal text-xs md:text-sm">{item.trim()}</li>
+                ))}
+              {compositionArray.length > visibleCount && (
+                <Tooltip 
+                  title={
+                    <div>
+                      <ul className="list-disc pl-4">
+                        {hiddenComposition.map((item: string, idx: number) => (
+                          <li key={idx} className="mb-1">{item.trim()}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  }
+                  overlayStyle={{ maxWidth: '300px' }}
+                >
+                  <li className="text-xs text-blue-500 cursor-help">
+                    +{hiddenComposition.length} more components
+                  </li>
+                </Tooltip>
+              )}
+            </ul>
+          </Tooltip>
+        );
+      },
     },
     {
-      title: 'Uses',
+      title: 'Uses / Indications',
       dataIndex: 'uses',
       key: 'uses',
       ellipsis: true,
-      minWidth: 140,
-      render: (_dom, entity) => (
-        <ul className="list-disc pl-4">
-          {entity.uses
-            .replace(/([a-z])([A-Z])/g, '$1|$2')
-            .split('|')
-            .map((item: string, idx: number) => (
-              <Tooltip title={item.trim()} key={idx}>
-                <li
-                  className="text-xs md:text-sm"
-                  style={{
-                    maxWidth: 100,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {item.trim()}
+      width: isMobile ? 100 : 160,
+      render: (_dom, entity) => {
+        const usesArray = entity.uses
+          .replace(/([a-z])([A-Z])/g, '$1|$2')
+          .split('|');
+        const visibleCount = isMobile ? 2 : 4;
+        const hiddenUses = usesArray.slice(visibleCount);
+
+        return (
+          <ul className="list-disc pl-3">
+            {usesArray
+              .slice(0, visibleCount)
+              .map((item: string, idx: number) => (
+                <Tooltip title={item.trim()} key={idx}>
+                  <li
+                    className="text-xs md:text-sm"
+                    style={{
+                      maxWidth: isMobile ? 80 : 120,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {item.trim()}
+                  </li>
+                </Tooltip>
+              ))}
+            {usesArray.length > visibleCount && (
+              <Tooltip 
+                title={
+                  <div>
+                    <ul className="list-disc pl-4">
+                      {hiddenUses.map((item: string, idx: number) => (
+                        <li key={idx} className="mb-1">{item.trim()}</li>
+                      ))}
+                    </ul>
+                  </div>
+                }
+                overlayStyle={{ maxWidth: '300px' }}
+              >
+                <li className="text-xs text-blue-500 cursor-help">
+                  +{hiddenUses.length} more uses
                 </li>
               </Tooltip>
-            ))}
-        </ul>
-      ),
+            )}
+          </ul>
+        );
+      },
     },
     {
       title: 'Side Effects',
       dataIndex: 'sideEffects',
       key: 'sideEffects',
-      minWidth: 100,
-      render: (_dom, entity) => (
-        <div className="flex flex-wrap gap-1">
-          {entity.sideEffects.replace(/ ([A-Z])/g, ', $1').split(',').map((item: string, idx: number) => (
-            <Tooltip title={item.trim()} key={idx}>
-              <Tag
-                color="volcano"
-                className="text-xs md:text-sm"
-                style={{
-                  maxWidth: 80,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  display: 'inline-block',
-                }}
+      width: isMobile ? 100 : 140,
+      render: (_dom, entity) => {
+        const sideEffectsArray = entity.sideEffects.replace(/ ([A-Z])/g, ', $1').split(',');
+        const visibleCount = isMobile ? 2 : 4;
+        const hiddenEffects = sideEffectsArray.slice(visibleCount);
+
+        return (
+          <div className="flex flex-wrap gap-1">
+            {sideEffectsArray
+              .slice(0, visibleCount)
+              .map((item: string, idx: number) => (
+                <Tooltip title={item.trim()} key={idx}>
+                  <Tag
+                    color="volcano"
+                    className="text-xs md:text-sm"
+                    style={{
+                      maxWidth: isMobile ? 60 : 80,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      display: 'inline-block',
+                    }}
+                  >
+                    {item.trim()}
+                  </Tag>
+                </Tooltip>
+              ))}
+            {sideEffectsArray.length > visibleCount && (
+              <Tooltip
+                title={
+                  <div>
+                    <ul className="list-disc pl-4">
+                      {hiddenEffects.map((item: string, idx: number) => (
+                        <li key={idx} className="mb-1">{item.trim()}</li>
+                      ))}
+                    </ul>
+                  </div>
+                }
+                overlayStyle={{ maxWidth: '300px' }}
               >
-                {item.trim()}
-              </Tag>
-            </Tooltip>
-          ))}
-        </div>
-      ),
+                <Tag color="orange" className="text-xs cursor-help">
+                  +{hiddenEffects.length} more
+                </Tag>
+              </Tooltip>
+            )}
+          </div>
+        );
+      },
     },
   ];
 
@@ -184,14 +288,28 @@ function App() {
     <PageContainer
       header={{
         title: (
-          <div className="flex items-center gap-2">
-            <MedicineBoxOutlined style={{ fontSize: 24, color: "#1890ff" }} />
-            <span className="font-bold text-base md:text-xl">MedInfo Finder</span>
+          <div className="flex items-center gap-1 md:gap-2">
+            <MedicineBoxOutlined style={{ fontSize: isMobile ? 20 : 24, color: "#1890ff" }} />
+            <span className="font-bold text-sm md:text-xl truncate">MedInfo Finder</span>
           </div>
         ),
-        subTitle: (
-          <span className="text-gray-500 text-xs md:text-base">Search and compare medicines efficiently</span>
-        ),
+        subTitle: !isMobile ? (
+          <div className="flex flex-col gap-1">
+            <span className="text-gray-500 text-xs md:text-base">
+              Search and compare medicines efficiently
+            </span>
+            {totalMedicines > 0 && (
+              <span className="text-blue-600 text-xs font-medium">
+                {isLoading ? 'Loading...' : `${totalMedicines.toLocaleString()} medicines available`}
+              </span>
+            )}
+          </div>
+        ) : undefined,
+        extra: !isMobile ? (
+          <div className="text-xs text-gray-400 hidden md:block">
+            💊 Comprehensive Medicine Database
+          </div>
+        ) : undefined,
       }}
       className="bg-gray-50 min-h-screen p-1 md:p-4"
     >
@@ -202,15 +320,33 @@ function App() {
             columns={columns}
             request={fetchMedicine}
             rowKey="id"
-            scroll={{ x: 'max-content' }}
-            sticky
+            scroll={{ 
+              x: isMobile ? 400 : 'max-content', 
+              y: isMobile ? 400 : 'calc(100vh - 320px)' 
+            }}
+            sticky={{ 
+              offsetHeader: isMobile ? 0 : 64,
+              offsetScroll: isMobile ? 0 : 24,
+              getContainer: () => window,
+            }}
             bordered
+            size={isMobile ? 'small' : 'middle'}
+            locale={{
+              emptyText: (
+                <div className="py-8 text-center">
+                  <MedicineBoxOutlined style={{ fontSize: 48, color: '#d9d9d9', marginBottom: 16 }} />
+                  <div className="text-gray-500 mb-2">No medicines found</div>
+                  <div className="text-gray-400 text-sm">Try adjusting your search criteria</div>
+                </div>
+              ),
+            }}
             pagination={{
               current: Number(searchParams.get('current')) || 1,
               pageSize: Number(searchParams.get('pageSize')) || 10,
               defaultPageSize: 10,
-              showSizeChanger: true,
-              showQuickJumper: true,
+              showSizeChanger: !isMobile,
+              showQuickJumper: !isMobile,
+              simple: isMobile,
             }}
             options={{
               reload: true,
@@ -221,6 +357,9 @@ function App() {
               labelWidth: 'auto',
               resetText: 'Reset',
               searchText: 'Search',
+              collapsed: isMobile,
+              defaultCollapsed: isMobile,
+              collapseRender: isMobile ? (collapsed) => (collapsed ? 'Expand' : 'Collapse') : undefined,
             }}
             toolBarRender={false}
             params={getParamsObject()}
