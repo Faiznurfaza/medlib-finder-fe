@@ -1,6 +1,6 @@
 import { ProTable, PageContainer } from "@ant-design/pro-components"
 import type { ActionType, ProColumns } from "@ant-design/pro-components"
-import { useRef, useCallback, useState, useEffect } from "react"
+import { useRef, useCallback, useState, useEffect, useMemo } from "react"
 import { useSearchParams } from "react-router-dom"
 import { Tag, Tooltip, Image } from "antd"
 import { MedicineBoxOutlined } from "@ant-design/icons"
@@ -12,6 +12,8 @@ function App() {
   const [isMobile, setIsMobile] = useState(false);
   const [totalMedicines, setTotalMedicines] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const lastRequestRef = useRef<string>('');
+  const requestTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     const checkIsMobile = () => {
@@ -23,65 +25,117 @@ function App() {
 
     return () => {
       window.removeEventListener('resize', checkIsMobile);
+      if (requestTimeoutRef.current) {
+        clearTimeout(requestTimeoutRef.current);
+      }
     };
   }, []);
 
-  const getParamsObject = () => {
+  const memoizedParams = useMemo(() => {
     const paramsObj: Record<string, string> = {};
     for (const [key, value] of searchParams.entries()) {
       paramsObj[key] = value;
     }
     return paramsObj;
-  };
+  }, [searchParams]);
 
-  const fetchMedicine = async (params: Record<string, any>) => {
-    setIsLoading(true);
-    try {
-      const mergedParams = { ...getParamsObject(), ...params };
-      const query = new URLSearchParams(mergedParams).toString();
-      const rawResponse = await fetch(`https://medlib-details-be.vercel.app/api/medicines?${query}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      const result = await rawResponse.json();
-      console.log('Fetched medicines:', result);
-      if (!rawResponse.ok) {
-        throw new Error(result.message || 'Failed to fetch medicines');
+  // Form values that sync with URL parameters
+  const formValues = useMemo(() => {
+    const values: Record<string, any> = {};
+    const searchKeys = ['name', 'composition', 'uses', 'manufacturer', 'sideEffects'];
+    
+    searchKeys.forEach(key => {
+      const value = searchParams.get(key);
+      if (value) {
+        values[key] = value;
       }
+    });
+    
+    return values;
+  }, [searchParams]);
 
-      setTotalMedicines(result.pagination?.total || 0);
-
+  const fetchMedicine = useCallback(async (params: Record<string, any>): Promise<{
+    data: any[];
+    success: boolean;
+    total: number;
+  }> => {
+    const mergedParams = { ...memoizedParams, ...params };
+    const requestKey = JSON.stringify(mergedParams);
+    
+    // Prevent duplicate requests with the same parameters
+    if (lastRequestRef.current === requestKey) {
       return {
-        data: result.data || [],
+        data: [],
         success: true,
-        total: result.pagination?.total || 0,
+        total: 0,
       };
-    } finally {
-      setIsLoading(false);
     }
-  };
+
+    // Clear any pending timeout
+    if (requestTimeoutRef.current) {
+      clearTimeout(requestTimeoutRef.current);
+    }
+
+    return new Promise((resolve) => {
+      requestTimeoutRef.current = setTimeout(async () => {
+        lastRequestRef.current = requestKey;
+        setIsLoading(true);
+        
+        try {
+          const query = new URLSearchParams(mergedParams).toString();
+          const rawResponse = await fetch(`https://medlib-details-be.vercel.app/api/medicines?${query}`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+
+          const result = await rawResponse.json();
+          console.log('Fetched medicines:', result);
+          if (!rawResponse.ok) {
+            throw new Error(result.message || 'Failed to fetch medicines');
+          }
+
+          setTotalMedicines(result.pagination?.total || 0);
+
+          resolve({
+            data: result.data || [],
+            success: true,
+            total: result.pagination?.total || 0,
+          });
+        } catch (error) {
+          console.error('Error fetching medicines:', error);
+          resolve({
+            data: [],
+            success: false,
+            total: 0,
+          });
+        } finally {
+          setIsLoading(false);
+          lastRequestRef.current = '';
+        }
+      }, 100); // 100ms debounce
+    });
+  }, [memoizedParams]);
 
   const handleTableChange = useCallback((params: Record<string, any>, _sort: any, _filter: any) => {
     const allowedKeys = ['current', 'pageSize', 'name', 'composition', 'uses', 'manufacturer', 'sideEffects'];
     const filteredParams: Record<string, any> = {};
 
-    Object.entries({ ...getParamsObject(), ...params }).forEach(([key, value]) => {
+    Object.entries({ ...memoizedParams, ...params }).forEach(([key, value]) => {
       if (allowedKeys.includes(key) && value !== undefined && value !== '') {
         filteredParams[key] = value;
       }
     });
 
     setSearchParams(filteredParams);
-  }, [searchParams, setSearchParams]);
+  }, [memoizedParams, setSearchParams]);
 
   const handleTableSubmit = useCallback((params: Record<string, any>) => {
     const allowedKeys = ['current', 'pageSize', 'name', 'composition', 'uses', 'manufacturer', 'sideEffects'];
     const filteredParams: Record<string, any> = {};
 
-    Object.entries({ ...getParamsObject(), ...params }).forEach(([key, value]) => {
+    Object.entries({ ...memoizedParams, ...params }).forEach(([key, value]) => {
       if (allowedKeys.includes(key) && value !== undefined && value !== '') {
         filteredParams[key] = value;
       }
@@ -89,7 +143,7 @@ function App() {
 
     filteredParams.current = 1;
     setSearchParams(filteredParams);
-  }, [searchParams, setSearchParams]);
+  }, [memoizedParams, setSearchParams]);
 
   const handleTableReset = useCallback(() => {
     setSearchParams({});
@@ -100,7 +154,8 @@ function App() {
       title: 'Medicine Name',
       dataIndex: 'name',
       key: 'name',
-      width: isMobile ? 120 : 180,
+      width: isMobile ? 120 : 200,
+      minWidth: isMobile ? 120 : 180,
       fixed: isMobile ? 'left' : undefined,
       render: (_dom, entity) => (
         <div className="flex items-center gap-1 md:gap-2 min-w-[100px] w-full">
@@ -116,13 +171,14 @@ function App() {
           <div className="flex flex-col gap-0">
             <Tooltip title={entity.name}>
               <div
-                style={{
-                  maxWidth: isMobile ? 70 : 100,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
                 className="font-bold text-gray-800 text-xs md:text-base"
+                style={{
+                  maxWidth: isMobile ? 70 : 'none',
+                  width: isMobile ? 70 : 'fit-content',
+                  overflow: isMobile ? 'hidden' : 'visible',
+                  textOverflow: isMobile ? 'ellipsis' : 'unset',
+                  whiteSpace: isMobile ? 'nowrap' : 'normal',
+                }}
               >
                 {entity.name}
               </div>
@@ -181,7 +237,8 @@ function App() {
       dataIndex: 'uses',
       key: 'uses',
       ellipsis: true,
-      width: isMobile ? 100 : 160,
+      width: isMobile ? 100 : 200,
+      minWidth: isMobile ? 100 : 180,
       render: (_dom, entity) => {
         const usesArray = entity.uses
           .replace(/([a-z])([A-Z])/g, '$1|$2')
@@ -198,10 +255,11 @@ function App() {
                   <li
                     className="text-xs md:text-sm"
                     style={{
-                      maxWidth: isMobile ? 80 : 120,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
+                      maxWidth: isMobile ? 80 : 'none',
+                      width: isMobile ? 80 : 'fit-content',
+                      overflow: isMobile ? 'hidden' : 'visible',
+                      textOverflow: isMobile ? 'ellipsis' : 'unset',
+                      whiteSpace: isMobile ? 'nowrap' : 'normal',
                     }}
                   >
                     {item.trim()}
@@ -317,10 +375,15 @@ function App() {
       <div className="bg-white rounded-xl shadow-md p-1 md:p-4">
         <div className="overflow-x-auto w-full">
           <ProTable
+            key={JSON.stringify(formValues)}
             actionRef={actionRef}
             columns={columns}
             request={fetchMedicine}
             rowKey="id"
+            form={{
+              initialValues: formValues,
+              syncToUrl: false,
+            }}
             scroll={{
               x: isMobile ? 400 : 'max-content',
               y: isMobile ? 400 : 'calc(100vh - 320px)'
@@ -367,7 +430,6 @@ function App() {
               ),
             }}
             toolBarRender={false}
-            params={getParamsObject()}
             onChange={handleTableChange}
             onSubmit={handleTableSubmit}
             onReset={handleTableReset}
