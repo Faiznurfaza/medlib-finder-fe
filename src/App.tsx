@@ -75,19 +75,20 @@ function App() {
       title: 'Medicine',
       dataIndex: 'name',
       key: 'name',
-      width: 220,
+      width: 180, // narrower for mobile
       render: (_dom, entity) => (
         <div className="flex items-center gap-2">
           <Image
             src={entity.imageUrl}
-            width={36}
-            height={36}
+            width={28}
+            height={28}
             style={{ objectFit: 'cover', borderRadius: 8, border: '1px solid #eee' }}
             preview={{ mask: <span>Click to enlarge</span> }}
             alt={entity.name}
+            className="md:w-9 md:h-9 w-7 h-7"
           />
           <div>
-            <div className="font-bold text-gray-800 text-sm md:text-base">{entity.name}</div>
+            <div className="font-bold text-gray-800 text-xs md:text-base">{entity.name}</div>
             <div className="text-xs text-gray-500">{entity.manufacturer}</div>
           </div>
         </div>
@@ -98,14 +99,14 @@ function App() {
       dataIndex: 'composition',
       key: 'composition',
       ellipsis: true,
-      width: 320,
+      width: 200,
       render: (_dom, entity) => (
         <Tooltip title={entity.composition}>
           <ul className="list-disc pl-4">
             {entity.composition
               .split(/\s*\+\s*/)
               .map((item: string, idx: number) => (
-                <li key={idx} className="whitespace-normal">{item.trim()}</li>
+                <li key={idx} className="whitespace-normal text-xs md:text-sm">{item.trim()}</li>
               ))}
           </ul>
         </Tooltip>
@@ -116,7 +117,7 @@ function App() {
       dataIndex: 'uses',
       key: 'uses',
       ellipsis: true,
-      width: 320,
+      width: 200,
       render: (_dom, entity) => (
         <ul className="list-disc pl-4">
           {entity.uses
@@ -125,8 +126,9 @@ function App() {
             .map((item: string, idx: number) => (
               <Tooltip title={item.trim()} key={idx}>
                 <li
+                  className="text-xs md:text-sm"
                   style={{
-                    maxWidth: 240,
+                    maxWidth: 120,
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
@@ -143,15 +145,16 @@ function App() {
       title: 'Side Effects',
       dataIndex: 'sideEffects',
       key: 'sideEffects',
-      width: 220,
+      width: 140,
       render: (_dom, entity) => (
         <div className="flex flex-wrap gap-1">
           {entity.sideEffects.replace(/ ([A-Z])/g, ', $1').split(',').map((item: string, idx: number) => (
             <Tooltip title={item.trim()} key={idx}>
               <Tag
                 color="volcano"
+                className="text-xs md:text-sm"
                 style={{
-                  maxWidth: 180,
+                  maxWidth: 80,
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
@@ -173,23 +176,23 @@ function App() {
         title: (
           <div className="flex items-center gap-2">
             <MedicineBoxOutlined style={{ fontSize: 24, color: "#1890ff" }} />
-            <span className="font-bold text-lg md:text-xl">MedInfo Finder</span>
+            <span className="font-bold text-base md:text-xl">MedInfo Finder</span>
           </div>
         ),
         subTitle: (
           <span className="text-gray-500 text-xs md:text-base">Search and compare medicines efficiently</span>
         ),
       }}
-      className="bg-gray-50 min-h-screen p-2 md:p-4"
+      className="bg-gray-50 min-h-screen p-1 md:p-4"
     >
-      <div className="bg-white rounded-xl shadow-md p-2 md:p-4">
-        <div className="overflow-x-auto">
+      <div className="bg-white rounded-xl shadow-md p-1 md:p-4">
+        <div className="overflow-x-auto w-full">
           <ProTable
             actionRef={actionRef}
             columns={columns}
             request={fetchMedicine}
             rowKey="id"
-            scroll={{ x: 'max-content' }}
+            scroll={{ x: 700 }}
             sticky
             bordered
             pagination={{
