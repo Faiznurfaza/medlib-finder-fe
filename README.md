@@ -1,69 +1,38 @@
-# React + TypeScript + Vite
+# MedInfo Finder
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+MedInfo Finder is a modern web application for searching and exploring a large database of medicines.  
+It provides instant access to **over 11,000 medicines** with details including name, indications/uses, side effects, composition, and manufacturer.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- 🔎 **Powerful Search:** Quickly find medicines by name, composition, uses, or manufacturer.
+- 📋 **Comprehensive Data:** 11,000+ medicines with detailed information.
+- 💊 **Detailed View:** See composition, uses, and side effects at a glance.
+- 🏷️ **Manufacturer Info:** Easily identify the producer of each medicine.
+- 📱 **Responsive UI:** Works great on desktop and mobile.
+- 🌐 **Shareable Links:** Filter and pagination state is reflected in the URL for easy sharing.
 
-## Expanding the ESLint configuration
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Tech Stack
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- [React](https://react.dev/)
+- [Ant Design Pro Components](https://procomponents.ant.design/)
+- [Ant Design](https://ant.design/)
+- [Vite](https://vitejs.dev/)
+- [TypeScript](https://www.typescriptlang.org/)
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+## Data Source
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+The medicine dataset is sourced from [Kaggle](https://www.kaggle.com/datasets/singhnavjot2062001/11000-medicine-details) and contains:
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+- **Name**
+- **Indication/Uses**
+- **Side Effects**
+- **Composition**
+- **Manufacturer**
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## License
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+This project is open source and available under the [MIT License](LICENSE).
+
+---
