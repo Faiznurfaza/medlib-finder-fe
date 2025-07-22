@@ -75,9 +75,9 @@ function App() {
       title: 'Medicine',
       dataIndex: 'name',
       key: 'name',
-      width: 180, // narrower for mobile
+      minWidth: 140,
       render: (_dom, entity) => (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 min-w-[140px]">
           <Image
             src={entity.imageUrl}
             width={28}
@@ -87,10 +87,19 @@ function App() {
             alt={entity.name}
             className="md:w-9 md:h-9 w-7 h-7"
           />
-          <div>
-            <div className="font-bold text-gray-800 text-xs md:text-base">{entity.name}</div>
-            <div className="text-xs text-gray-500">{entity.manufacturer}</div>
+          <div
+            style={{
+              maxWidth: 100,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+            className="font-bold text-gray-800 text-xs md:text-base"
+            title={entity.name}
+          >
+            {entity.name}
           </div>
+          <div className="text-xs text-gray-500 hidden md:block">{entity.manufacturer}</div>
         </div>
       ),
     },
@@ -99,7 +108,7 @@ function App() {
       dataIndex: 'composition',
       key: 'composition',
       ellipsis: true,
-      width: 200,
+      minWidth: 140,
       render: (_dom, entity) => (
         <Tooltip title={entity.composition}>
           <ul className="list-disc pl-4">
@@ -117,7 +126,7 @@ function App() {
       dataIndex: 'uses',
       key: 'uses',
       ellipsis: true,
-      width: 200,
+      minWidth: 140,
       render: (_dom, entity) => (
         <ul className="list-disc pl-4">
           {entity.uses
@@ -128,7 +137,7 @@ function App() {
                 <li
                   className="text-xs md:text-sm"
                   style={{
-                    maxWidth: 120,
+                    maxWidth: 100,
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
@@ -145,7 +154,7 @@ function App() {
       title: 'Side Effects',
       dataIndex: 'sideEffects',
       key: 'sideEffects',
-      width: 140,
+      minWidth: 100,
       render: (_dom, entity) => (
         <div className="flex flex-wrap gap-1">
           {entity.sideEffects.replace(/ ([A-Z])/g, ', $1').split(',').map((item: string, idx: number) => (
@@ -192,7 +201,7 @@ function App() {
             columns={columns}
             request={fetchMedicine}
             rowKey="id"
-            scroll={{ x: 700 }}
+            scroll={{ x: 'max-content' }}
             sticky
             bordered
             pagination={{
